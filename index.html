@@ -145,7 +145,7 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 .hgo:hover { opacity:.82; }
 .hgo:active { transform:scale(.95); }
 
-/* ── Bookmark bar ── */
+/* Bookmark bar */
 .bmlabel {
   font-family:'Space Mono',monospace;
   font-size:10px;
@@ -204,6 +204,41 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   width:100%;
 }
 .bm:hover span { color:var(--text); }
+
+/* Games Hub */
+.ghub {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+  max-width:min(720px,92vw);
+  animation:up .5s .24s cubic-bezier(.16,1,.3,1) both;
+  padding: 4px 0;
+}
+.gbtn {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 16px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .15s;
+  user-select:none;
+  font-family:'Inter',sans-serif;
+}
+.gbtn:hover {
+  background:var(--s3);
+  border-color:var(--accent);
+  color:var(--text);
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(124,58,237,.2);
+}
+.gbtn .ico { font-size:18px; }
 
 #frame {
   position:absolute; inset:0; width:100%; height:100%;
@@ -381,6 +416,28 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 
       <div class="bmlabel">// bookmarks</div>
       <div class="bmbar" id="bmbar"></div>
+
+      <div class="bmlabel" style="margin-top:14px;">// games</div>
+      <div class="ghub" id="gamesHub">
+        <div class="gbtn" onclick="nav('https://nettleweb.com')">
+          <span class="ico">🎮</span> NettleWeb
+        </div>
+        <div class="gbtn" onclick="nav('https://www.games44.com/action/x-trench-run')">
+          <span class="ico">🚀</span> X Trench Run
+        </div>
+        <div class="gbtn" onclick="nav('https://playhop.com/tag/five_nights_at_freddy_325')">
+          <span class="ico">🐻</span> FNAF
+        </div>
+        <div class="gbtn" onclick="nav('https://playhop.com/tag/mobil_47')">
+          <span class="ico">🏎️</span> Car Games
+        </div>
+        <div class="gbtn" onclick="nav('https://playhop.com/tag/anime_51')">
+          <span class="ico">🌸</span> Anime
+        </div>
+        <div class="gbtn" onclick="nav('https://www.mathplayground.com/math-games.html')">
+          <span class="ico">🧮</span> Math
+        </div>
+      </div>
     </div>
 
     <div id="loading">
@@ -609,9 +666,7 @@ function hgo() {
 
 function nav(url) { load(url); }
 
-// ── Load: fetch page content and inject via srcdoc ───
-// This avoids showing the proxy URL in the iframe's source.
-async function load(url) {
+function load(url) {
   if (!url) return;
   lastUrl = url;
   tabs[active].url = url;
@@ -626,88 +681,36 @@ async function load(url) {
   startLoad();
   clearTimeout(loadTimer);
 
-  try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
+  const proxied = px(url);
+  document.getElementById('frame').src = proxied;
 
-  // Try proxies in order until one returns content
-  const order = proxyOrder();
-  let succeeded = false;
-
-  for (const idx of order) {
-    try {
-      const proxied = PX[idx](url);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const r = await fetch(proxied, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!r.ok) throw new Error('http ' + r.status);
-
-      let text = await r.text();
-
-      // corsproxy.org / allorigins.win raw return the HTML directly.
-      // If it's wrapped in JSON (allorigins get endpoint), unwrap.
-      if (text.trim().startsWith('{')) {
-        try {
-          const j = JSON.parse(text);
-          if (j && typeof j.contents === 'string') text = j.contents;
-        } catch(e) {}
-      }
-
-      if (!text || text.length < 20) throw new Error('empty');
-
-      // Inject base tag so relative resources resolve to the original URL
-      const baseTag = `<base href="${url}">`;
-      let injected = text;
-      if (/<head[^>]*>/i.test(injected)) {
-        injected = injected.replace(/<head[^>]*>/i, m => m + baseTag);
-      } else if (/<html[^>]*>/i.test(injected)) {
-        injected = injected.replace(/<html[^>]*>/i, m => m + '<head>' + baseTag + '</head>');
-      } else {
-        injected = '<head>' + baseTag + '</head>' + injected;
-      }
-
-      // Load into iframe
-      const frame = document.getElementById('frame');
-      frame.removeAttribute('src');
-      frame.srcdoc = injected;
-
-      // Mark success
-      succeeded = true;
-      document.getElementById('psel').value = String(idx);
-      break;
-    } catch (err) {
-      // try next
-      continue;
-    }
-  }
-
-  if (!succeeded) {
-    errored();
-    return;
-  }
-
-  // Safety timeout in case iframe onload never fires
   loadTimer = setTimeout(() => {
     if (document.getElementById('loading').classList.contains('on')) {
-      loaded();
+      const cur = parseInt(document.getElementById('psel').value) || 0;
+      const next = (cur + 1) % 3;
+      if (next !== cur) {
+        document.getElementById('psel').value = String(next);
+        document.getElementById('ltxt').textContent = 'Retrying via backup…';
+        document.getElementById('frame').src = px(url);
+        clearTimeout(loadTimer);
+        loadTimer = setTimeout(() => {
+          if (document.getElementById('loading').classList.contains('on')) {
+            errored();
+          }
+        }, 12000);
+      } else {
+        errored();
+      }
     }
-  }, 3000);
-}
+  }, 12000);
 
-function proxyOrder() {
-  const cur = parseInt(document.getElementById('psel').value) || 0;
-  const order = [cur];
-  for (let i = 0; i < PX.length; i++) if (i !== cur) order.push(i);
-  return order;
+  try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
 }
 
 function home() {
   document.getElementById('home').classList.remove('out');
-  const frame = document.getElementById('frame');
-  frame.classList.remove('on');
-  frame.removeAttribute('src');
-  frame.removeAttribute('srcdoc');
+  document.getElementById('frame').classList.remove('on');
+  document.getElementById('frame').src = '';
   document.getElementById('loading').classList.remove('on');
   document.getElementById('err').style.display = 'none';
   document.getElementById('urlbar').value = '';
