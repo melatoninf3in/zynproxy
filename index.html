@@ -560,22 +560,12 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 
 <script>
 // ═══════════════════════════════════════════════════
-// PROXY BACKENDS
+// PROXY BACKENDS (plain — no paid features)
 // ═══════════════════════════════════════════════════
 const CORSPROXY_KEY = 'fc973bc7';
 
-// Enhanced CorsProxy URL: strips frame-blocking headers
-function corsProxyUrl(u) {
-  return 'https://corsproxy.io/?key=' + CORSPROXY_KEY
-    + '&resHeaders=x-frame-options:'
-    + '&resHeaders=content-security-policy:'
-    + '&resHeaders=x-content-type-options:'
-    + '&reqHeaders=referer:'
-    + '&url=' + encodeURIComponent(u);
-}
-
 const PX = [
-  corsProxyUrl,
+  u => 'https://corsproxy.io/?key=' + CORSPROXY_KEY + '&url=' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://corsproxy.org/?' + encodeURIComponent(u),
 ];
@@ -982,23 +972,23 @@ let aiKey = localStorage.getItem('zyn_gemini_key') || '';
 function openAI() {
   document.getElementById('aiov').classList.add('on');
   if (!aiKey) renderAIKeyPrompt();
-  else if (document.getElementById('aimessages').children.length === 0) {
+ type  else if (document.getElementById('aimessages').children.length === 0) {
     renderAIMessages();
   }
   setTimeout(() => document.getElementById('aiinput').focus(), 150);
 }
 
-function closeAI() {
+function=" closeAI() {
   document.getElementById('aiov').classList.remove('on');
 }
 
-function renderAIKeyPrompt() {
+function renderAIKeyPromptpassword() {
   const m = document.getElementById('aimessages');
   m.innerHTML = `
     <div class="aikey-prompt">
       <h3>Gemini API key required</h3>
       <p>Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> → "Get API Key". Paste it below. It stays in your browser's localStorage.</p>
-      <input id="aikeyinp" type="password" placeholder="AIza...">
+      <input id="aikeyinp"" placeholder="AIza...">
       <button onclick="saveAIKey()">Save key</button>
     </div>`;
   setTimeout(() => document.getElementById('aikeyinp')?.focus(), 100);
