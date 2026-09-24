@@ -50,11 +50,9 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   border-bottom:1px solid var(--border); flex-shrink:0;
 }
 #logo {
-  font-family:'Space Mono',monospace; font-size:19px; font-weight:700;
-  color:#c4b5fd;
-  letter-spacing:-0.5px;
+  font-family:'Space Mono',monospace; font-size:17px;
+  color:var(--accent-l); letter-spacing:-0.5px;
   flex-shrink:0; user-select:none;
-  text-shadow:0 0 12px rgba(124,58,237,.6), 0 0 3px rgba(196,181,253,.4);
 }
 .nbtn {
   background:var(--s2); border:1px solid var(--border);
@@ -461,7 +459,7 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     </div>
 
     <iframe id="frame"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
       onload="loaded()" onerror="errored()"></iframe>
   </div>
 
@@ -486,11 +484,11 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Proxy backend</div>
       <div class="notice">
-        <b>CorsProxy</b> with your API key is the default. If a site fails, zyn auto-swaps to backups.
+        <b>AllOrigins</b> is the default. If a site fails, zyn auto-swaps to backups.
       </div>
       <select class="sinp" id="psel" onchange="pchanged()">
-        <option value="0">CorsProxy (with key) ★</option>
-        <option value="1">AllOrigins</option>
+        <option value="0">AllOrigins ★</option>
+        <option value="1">CorsProxy (with key)</option>
         <option value="2">CorsProxy.org</option>
         <option value="custom">Custom</option>
       </select>
@@ -500,7 +498,7 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Circuit</div>
       <div class="ir"><span>Status</span><span class="iv ivg">● Connected</span></div>
-      <div class="ir"><span>Backend</span><span class="iv" id="sbackend">CorsProxy</span></div>
+      <div class="ir"><span>Backend</span><span class="iv" id="sbackend">AllOrigins</span></div>
       <div class="ir"><span>Exit IP</span><span class="iv" id="sexit">185.220.101.47</span></div>
       <div class="srow"><button class="sbtn sp1" onclick="newCircuit(this)">Rotate IP</button></div>
     </div>
@@ -560,13 +558,13 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 
 <script>
 // ═══════════════════════════════════════════════════
-// PROXY BACKENDS (plain — no paid features)
+// PROXY BACKENDS
 // ═══════════════════════════════════════════════════
 const CORSPROXY_KEY = 'fc973bc7';
 
 const PX = [
-  u => 'https://corsproxy.io/?key=' + CORSPROXY_KEY + '&url=' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?key=' + CORSPROXY_KEY + '&url=' + encodeURIComponent(u),
   u => 'https://corsproxy.org/?' + encodeURIComponent(u),
 ];
 
@@ -585,7 +583,7 @@ function px(u) {
 function pchanged() {
   const val = document.getElementById('psel').value;
   document.getElementById('cpinp').style.display = val === 'custom' ? 'block' : 'none';
-  const names = ['CorsProxy', 'AllOrigins', 'CorsProxy.org', 'Custom'];
+  const names = ['AllOrigins', 'CorsProxy', 'CorsProxy.org', 'Custom'];
   document.getElementById('sbackend').textContent = val === 'custom' ? 'Custom' : names[parseInt(val)];
 }
 
@@ -784,9 +782,9 @@ function load(url) {
       clearTimeout(loadTimer);
       loadTimer = setTimeout(() => {
         if (document.getElementById('loading').classList.contains('on')) errored();
-      }, 20000);
+      }, 15000);
     }
-  }, 20000);
+  }, 15000);
 
   try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
 }
@@ -972,23 +970,23 @@ let aiKey = localStorage.getItem('zyn_gemini_key') || '';
 function openAI() {
   document.getElementById('aiov').classList.add('on');
   if (!aiKey) renderAIKeyPrompt();
- type  else if (document.getElementById('aimessages').children.length === 0) {
+  else if (document.getElementById('aimessages').children.length === 0) {
     renderAIMessages();
   }
   setTimeout(() => document.getElementById('aiinput').focus(), 150);
 }
 
-function=" closeAI() {
+function closeAI() {
   document.getElementById('aiov').classList.remove('on');
 }
 
-function renderAIKeyPromptpassword() {
+function renderAIKeyPrompt() {
   const m = document.getElementById('aimessages');
   m.innerHTML = `
     <div class="aikey-prompt">
       <h3>Gemini API key required</h3>
       <p>Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> → "Get API Key". Paste it below. It stays in your browser's localStorage.</p>
-      <input id="aikeyinp"" placeholder="AIza...">
+      <input id="aikeyinp" type="password" placeholder="AIza...">
       <button onclick="saveAIKey()">Save key</button>
     </div>`;
   setTimeout(() => document.getElementById('aikeyinp')?.focus(), 100);
