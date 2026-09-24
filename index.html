@@ -112,8 +112,10 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 #home {
   position:absolute; inset:0; background:var(--black);
   display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:26px; z-index:5;
+  justify-content:center; gap:22px; z-index:5;
   transition:opacity .25s;
+  overflow-y:auto;
+  padding: 20px;
 }
 #home.out { opacity:0; pointer-events:none; }
 .hw {
@@ -122,10 +124,11 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   background:linear-gradient(135deg,#7c3aed,#a78bfa,#c4b5fd);
   -webkit-background-clip:text; background-clip:text; color:transparent;
   letter-spacing:-3px; animation:up .5s cubic-bezier(.16,1,.3,1) both;
+  flex-shrink: 0;
 }
-.hsub { font-size:13px; color:var(--muted); text-align:center; max-width:280px; line-height:1.6; animation:up .5s .08s cubic-bezier(.16,1,.3,1) both; }
+.hsub { font-size:13px; color:var(--muted); text-align:center; max-width:280px; line-height:1.6; animation:up .5s .08s cubic-bezier(.16,1,.3,1) both; flex-shrink: 0; }
 @keyframes up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-.hrow { display:flex; gap:8px; width:min(480px,88vw); animation:up .5s .15s cubic-bezier(.16,1,.3,1) both; }
+.hrow { display:flex; gap:8px; width:min(480px,88vw); animation:up .5s .15s cubic-bezier(.16,1,.3,1) both; flex-shrink: 0; }
 .hinp {
   flex:1; background:var(--s2); border:1px solid var(--border2);
   border-radius:9px; padding:11px 15px; color:var(--text);
@@ -141,13 +144,66 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 }
 .hgo:hover { opacity:.82; }
 .hgo:active { transform:scale(.95); }
-.qrow { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; animation:up .5s .22s cubic-bezier(.16,1,.3,1) both; }
-.q {
-  background:var(--s2); border:1px solid var(--border); border-radius:7px;
-  padding:5px 13px; font-size:12px; color:var(--muted); cursor:pointer;
-  transition:background .1s, color .1s, border-color .1s;
+
+/* ── Bookmark bar ── */
+.bmlabel {
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.15em;
+  margin-top:8px;
+  animation:up .5s .2s cubic-bezier(.16,1,.3,1) both;
+  flex-shrink: 0;
 }
-.q:hover { background:var(--s3); color:var(--text); border-color:var(--accent); }
+.bmbar {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+  max-width:min(720px,92vw);
+  animation:up .5s .22s cubic-bezier(.16,1,.3,1) both;
+  padding: 4px 0;
+}
+.bm {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px 10px 10px;
+  width:78px;
+  cursor:pointer;
+  transition:all .15s;
+  user-select:none;
+}
+.bm:hover {
+  background:var(--s3);
+  border-color:var(--accent);
+  transform:translateY(-3px);
+  box-shadow:0 8px 20px rgba(124,58,237,.25);
+}
+.bm img {
+  width:34px;
+  height:34px;
+  border-radius:8px;
+  object-fit:cover;
+  background:#fff;
+  padding:2px;
+}
+.bm span {
+  font-size:10px;
+  color:var(--muted);
+  text-align:center;
+  line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  width:100%;
+}
+.bm:hover span { color:var(--text); }
 
 #frame {
   position:absolute; inset:0; width:100%; height:100%;
@@ -322,14 +378,9 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
           onkeydown="if(event.key==='Enter')hgo()">
         <button class="hgo" onclick="hgo()">Browse</button>
       </div>
-      <div class="qrow">
-        <div class="q" onclick="nav('https://duckduckgo.com')">DuckDuckGo</div>
-        <div class="q" onclick="nav('https://en.wikipedia.org')">Wikipedia</div>
-        <div class="q" onclick="nav('https://proton.me')">ProtonMail</div>
-        <div class="q" onclick="nav('https://searx.be')">SearX</div>
-        <div class="q" onclick="nav('https://archive.org')">Archive.org</div>
-        <div class="q" onclick="nav('https://reddit.com')">Reddit</div>
-      </div>
+
+      <div class="bmlabel">// bookmarks</div>
+      <div class="bmbar" id="bmbar"></div>
     </div>
 
     <div id="loading">
@@ -460,6 +511,31 @@ function nextProxy() {
   if (lastUrl) load(lastUrl);
 }
 
+// ── Bookmarks ────────────────────────────────────────
+const BOOKMARKS = [
+  { name: 'Discord',        url: 'https://discord.com/app',           icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/discord/discord-original.svg' },
+  { name: 'YouTube',        url: 'https://youtube.com',               icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/youtube/youtube-original.svg' },
+  { name: 'MathPlayground', url: 'https://mathplayground.com',        icon: 'https://www.mathplayground.com/favicon.ico' },
+  { name: 'Now.gg',         url: 'https://now.gg',                    icon: 'https://now.gg/favicon.ico' },
+  { name: 'Twitch',         url: 'https://twitch.tv',                 icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/twitch/twitch-original.svg' },
+  { name: 'Netflix',        url: 'https://netflix.com',               icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/netflix/netflix-original.svg' },
+  { name: 'Spotify',        url: 'https://open.spotify.com',          icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spotify/spotify-original.svg' },
+  { name: 'Roblox',         url: 'https://roblox.com',                icon: 'https://www.roblox.com/favicon.ico' },
+];
+
+function renderBookmarks() {
+  const bar = document.getElementById('bmbar');
+  bar.innerHTML = '';
+  BOOKMARKS.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'bm';
+    el.title = b.url;
+    el.innerHTML = `<img src="${b.icon}" alt="" onerror="this.style.opacity=.3"><span>${b.name}</span>`;
+    el.onclick = () => nav(b.url);
+    bar.appendChild(el);
+  });
+}
+
 // ── Tabs ────────────────────────────────────────────
 let tabs = [{ id:0, title:'New Tab', url:'' }];
 let active = 0, tid = 1;
@@ -533,7 +609,9 @@ function hgo() {
 
 function nav(url) { load(url); }
 
-function load(url) {
+// ── Load: fetch page content and inject via srcdoc ───
+// This avoids showing the proxy URL in the iframe's source.
+async function load(url) {
   if (!url) return;
   lastUrl = url;
   tabs[active].url = url;
@@ -548,36 +626,88 @@ function load(url) {
   startLoad();
   clearTimeout(loadTimer);
 
-  const proxied = px(url);
-  document.getElementById('frame').src = proxied;
+  try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
 
+  // Try proxies in order until one returns content
+  const order = proxyOrder();
+  let succeeded = false;
+
+  for (const idx of order) {
+    try {
+      const proxied = PX[idx](url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const r = await fetch(proxied, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!r.ok) throw new Error('http ' + r.status);
+
+      let text = await r.text();
+
+      // corsproxy.org / allorigins.win raw return the HTML directly.
+      // If it's wrapped in JSON (allorigins get endpoint), unwrap.
+      if (text.trim().startsWith('{')) {
+        try {
+          const j = JSON.parse(text);
+          if (j && typeof j.contents === 'string') text = j.contents;
+        } catch(e) {}
+      }
+
+      if (!text || text.length < 20) throw new Error('empty');
+
+      // Inject base tag so relative resources resolve to the original URL
+      const baseTag = `<base href="${url}">`;
+      let injected = text;
+      if (/<head[^>]*>/i.test(injected)) {
+        injected = injected.replace(/<head[^>]*>/i, m => m + baseTag);
+      } else if (/<html[^>]*>/i.test(injected)) {
+        injected = injected.replace(/<html[^>]*>/i, m => m + '<head>' + baseTag + '</head>');
+      } else {
+        injected = '<head>' + baseTag + '</head>' + injected;
+      }
+
+      // Load into iframe
+      const frame = document.getElementById('frame');
+      frame.removeAttribute('src');
+      frame.srcdoc = injected;
+
+      // Mark success
+      succeeded = true;
+      document.getElementById('psel').value = String(idx);
+      break;
+    } catch (err) {
+      // try next
+      continue;
+    }
+  }
+
+  if (!succeeded) {
+    errored();
+    return;
+  }
+
+  // Safety timeout in case iframe onload never fires
   loadTimer = setTimeout(() => {
     if (document.getElementById('loading').classList.contains('on')) {
-      const cur = parseInt(document.getElementById('psel').value) || 0;
-      const next = (cur + 1) % 3;
-      if (next !== cur) {
-        document.getElementById('psel').value = String(next);
-        document.getElementById('ltxt').textContent = 'Retrying via backup…';
-        document.getElementById('frame').src = px(url);
-        clearTimeout(loadTimer);
-        loadTimer = setTimeout(() => {
-          if (document.getElementById('loading').classList.contains('on')) {
-            errored();
-          }
-        }, 12000);
-      } else {
-        errored();
-      }
+      loaded();
     }
-  }, 12000);
+  }, 3000);
+}
 
-  try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
+function proxyOrder() {
+  const cur = parseInt(document.getElementById('psel').value) || 0;
+  const order = [cur];
+  for (let i = 0; i < PX.length; i++) if (i !== cur) order.push(i);
+  return order;
 }
 
 function home() {
   document.getElementById('home').classList.remove('out');
-  document.getElementById('frame').classList.remove('on');
-  document.getElementById('frame').src = '';
+  const frame = document.getElementById('frame');
+  frame.classList.remove('on');
+  frame.removeAttribute('src');
+  frame.removeAttribute('srcdoc');
   document.getElementById('loading').classList.remove('on');
   document.getElementById('err').style.display = 'none';
   document.getElementById('urlbar').value = '';
@@ -788,6 +918,7 @@ function clearBg() {
 
 // ── Init ─────────────────────────────────────────────
 renderTabs();
+renderBookmarks();
 const _e=EN[Math.random()*EN.length|0], _n=(Math.random()*253+1)|0;
 document.getElementById('exitip').textContent=_e+'.'+_n;
 document.getElementById('sexit').textContent=_e+'.'+_n;
