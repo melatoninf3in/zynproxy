@@ -380,12 +380,15 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Tab Cloak</div>
       <div class="notice">
-        Every cloak opens a <b>new about:blank window</b> containing zyn, then applies the disguise. This is the only way cloaks actually stick in modern browsers.
+        Every cloak opens a <b>new about:blank window</b> containing zyn, then applies the disguise.
       </div>
       <div class="chips" id="cchips">
         <div class="chip" onclick="cloak('google',this)"><img src="https://www.google.com/favicon.ico">Google</div>
         <div class="chip" onclick="cloak('classroom',this)"><img src="https://ssl.gstatic.com/classroom/favicon.png">Classroom</div>
         <div class="chip" onclick="cloak('clever',this)"><img src="https://clever.com/favicon.ico">Clever</div>
+        <div class="chip" onclick="cloak('ixl',this)"><img src="https://www.ixl.com/favicon.ico">IXL</div>
+        <div class="chip" onclick="cloak('khan',this)"><img src="https://cdn.kastatic.org/images/favicon.ico">Khan</div>
+        <div class="chip" onclick="cloak('pear',this)"><img src="https://www.pearsonassessments.com/etc/designs/pearson/favicon.ico">Pear</div>
         <div class="chip" onclick="cloak('drive',this)"><img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png">Drive</div>
         <div class="chip" onclick="cloak('canvas',this)"><img src="https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico">Canvas</div>
         <div class="chip" onclick="cloak('outlook',this)"><img src="https://outlook.live.com/favicon.ico">Outlook</div>
@@ -414,7 +417,7 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Proxy backend</div>
       <select class="sinp" id="psel" onchange="pchanged()">
-        <option value="0">corsproxy.io</option>
+        <option value="0">corsproxy.io (with key)</option>
         <option value="1">allorigins.win</option>
         <option value="2">corsproxy.org</option>
         <option value="custom">Custom</option>
@@ -426,8 +429,9 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 
 <script>
 // ── Proxies ─────────────────────────────────────────
+const CORSPROXY_KEY = 'fc973bc7';
 const PX = [
-  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?key=' + CORSPROXY_KEY + '&url=' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://corsproxy.org/?' + encodeURIComponent(u),
 ];
@@ -544,21 +548,17 @@ function load(url) {
   startLoad();
   clearTimeout(loadTimer);
 
-  // Route through proxy
   const proxied = px(url);
   document.getElementById('frame').src = proxied;
 
-  // Timeout: if frame hasn't loaded in 12s, fallback to next proxy
   loadTimer = setTimeout(() => {
     if (document.getElementById('loading').classList.contains('on')) {
-      // Try next proxy
       const cur = parseInt(document.getElementById('psel').value) || 0;
       const next = (cur + 1) % 3;
       if (next !== cur) {
         document.getElementById('psel').value = String(next);
         document.getElementById('ltxt').textContent = 'Retrying via backup…';
         document.getElementById('frame').src = px(url);
-        // Second timeout for final error
         clearTimeout(loadTimer);
         loadTimer = setTimeout(() => {
           if (document.getElementById('loading').classList.contains('on')) {
@@ -658,16 +658,15 @@ const CK = {
   google:    {title:'Google',                  fav:'https://www.google.com/favicon.ico'},
   classroom: {title:'Google Classroom',        fav:'https://ssl.gstatic.com/classroom/favicon.png'},
   clever:    {title:'Clever | Portal',         fav:'https://clever.com/favicon.ico'},
+  ixl:       {title:'IXL | Math, Language Arts, Science, Social Studies, and Spanish', fav:'https://www.ixl.com/favicon.ico'},
+  khan:      {title:'Khan Academy | Free Online Courses, Lessons & Practice',         fav:'https://cdn.kastatic.org/images/favicon.ico'},
+  pear:      {title:'Pear Assessment',         fav:'https://www.pearsonassessments.com/etc/designs/pearson/favicon.ico'},
   drive:     {title:'My Drive – Google Drive', fav:'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'},
   canvas:    {title:'Dashboard – Canvas',      fav:'https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico'},
   outlook:   {title:'Inbox – Outlook',         fav:'https://outlook.live.com/favicon.ico'},
   docs:      {title:'Document – Google Docs',  fav:'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'},
 };
 
-// ── Universal cloak via about:blank popup ────────────
-// Every cloak (preset or custom) opens a new about:blank window
-// containing zyn via iframe, then applies title + favicon there.
-// This is the only way cloaks reliably persist.
 function openCloakedWindow(title, fav) {
   const w = window.open('about:blank', '_blank');
   if (!w) {
@@ -675,7 +674,6 @@ function openCloakedWindow(title, fav) {
     return false;
   }
 
-  // Build the popup content
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -691,10 +689,7 @@ ${fav ? `<link rel="icon" href="${escapeHtml(fav)}">` : ''}
 <body>
 <iframe src="${escapeHtml(location.href)}" allowfullscreen></iframe>
 <script>
-  // Prevent zyn's own title from overriding ours
-  try {
-    document.title = ${JSON.stringify(title)};
-  } catch(e) {}
+  try { document.title = ${JSON.stringify(title)}; } catch(e) {}
 <\/script>
 </body>
 </html>`;
@@ -703,8 +698,6 @@ ${fav ? `<link rel="icon" href="${escapeHtml(fav)}">` : ''}
   w.document.write(html);
   w.document.close();
 
-  // Also re-apply the title after the iframe starts loading
-  // (some browsers reset title)
   try {
     setTimeout(() => {
       try { w.document.title = title; } catch(e) {}
@@ -726,10 +719,9 @@ function cloak(key, el) {
   const c = CK[key];
   if (!c) return;
   openCloakedWindow(c.title, c.fav);
-  showFetchStatus('✓ opened cloaked window: ' + c.title);
+  showFetchStatus('✓ opened cloaked window: ' + c.title.substring(0, 30));
 }
 
-// ── Custom cloak: fetch title + favicon from URL ─────
 async function fetchCloak() {
   const urlRaw = document.getElementById('curl').value.trim();
   const override = document.getElementById('ctitle').value.trim();
@@ -770,7 +762,7 @@ async function fetchCloak() {
 
   openCloakedWindow(title, fav);
   document.querySelectorAll('#cchips .chip').forEach(c=>c.classList.remove('on'));
-  showFetchStatus('✓ ' + title);
+  showFetchStatus('✓ ' + title.substring(0, 40));
 }
 
 function showFetchStatus(msg) {
@@ -780,7 +772,6 @@ function showFetchStatus(msg) {
   showFetchStatus._t = setTimeout(()=>{ el.textContent=''; }, 4000);
 }
 
-// ── Background ───────────────────────────────────────
 function applyBg() {
   const u=document.getElementById('bginp').value.trim();
   if (!u) return;
