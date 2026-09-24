@@ -24,10 +24,8 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   --red: #ef4444;
 }
 
-/* ── Layout ── */
 #app { display:flex; flex-direction:column; height:100vh; }
 
-/* ── Tabs ── */
 #tabs {
   display:flex; align-items:flex-end; gap:1px;
   padding:6px 10px 0; min-height:34px;
@@ -58,7 +56,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 }
 #new-tab:hover { color:var(--text); background:var(--s2); }
 
-/* ── Toolbar ── */
 #bar {
   display:flex; align-items:center; gap:7px;
   padding:8px 12px; background:var(--s1);
@@ -110,10 +107,8 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 }
 #sbtn:hover { color:var(--text); background:var(--s3); transform:rotate(60deg); }
 
-/* ── Content ── */
 #content { flex:1; position:relative; overflow:hidden; background:var(--black); }
 
-/* Home */
 #home {
   position:absolute; inset:0; background:var(--black);
   display:flex; flex-direction:column; align-items:center;
@@ -154,14 +149,12 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 }
 .q:hover { background:var(--s3); color:var(--text); border-color:var(--accent); }
 
-/* Frame */
 #frame {
   position:absolute; inset:0; width:100%; height:100%;
   border:none; background:#fff; display:none;
 }
 #frame.on { display:block; }
 
-/* Loading */
 #loading {
   position:absolute; inset:0; background:rgba(0,0,0,.92);
   display:flex; flex-direction:column; align-items:center;
@@ -173,7 +166,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 @keyframes spin { to{transform:rotate(360deg)} }
 .ltxt { font-family:'Space Mono',monospace; font-size:10.5px; color:var(--muted); }
 
-/* Error */
 #err {
   position:absolute; inset:0; background:var(--black);
   flex-direction:column; align-items:center; justify-content:center;
@@ -190,7 +182,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 }
 .echip:hover { background:var(--s3); color:var(--text); }
 
-/* Progress */
 #prog {
   position:fixed; top:0; left:0; height:2px; width:0%;
   background:linear-gradient(90deg,var(--accent),#c4b5fd);
@@ -199,7 +190,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   box-shadow:0 0 10px rgba(124,58,237,.8);
 }
 
-/* Status */
 #status {
   display:flex; align-items:center; gap:10px;
   padding:4px 14px; background:var(--black);
@@ -210,7 +200,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 .sg { color:var(--green); }
 .sp { color:#222; }
 
-/* ── Settings overlay ── */
 #ov {
   position:fixed; inset:0; z-index:800;
   background:rgba(0,0,0,.8); backdrop-filter:blur(8px);
@@ -268,17 +257,17 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 .sp1 { background:var(--accent); color:#fff; }
 .sg1 { background:var(--s3); color:var(--text); border:1px solid var(--border2); }
 
-/* Chips */
 .chips { display:flex; gap:6px; flex-wrap:wrap; }
 .chip {
   background:var(--s2); border:1px solid var(--border); border-radius:7px;
   padding:5px 11px; font-size:12px; color:var(--muted); cursor:pointer;
   transition:all .1s; user-select:none;
+  display:flex; align-items:center; gap:5px;
 }
 .chip:hover { background:var(--s3); color:var(--text); }
 .chip.on { background:rgba(124,58,237,.18); border-color:var(--accent); color:var(--accent-l); }
+.chip img { width:14px; height:14px; border-radius:2px; }
 
-/* Info rows */
 .ir {
   display:flex; justify-content:space-between; align-items:center;
   padding:8px 0; border-bottom:1px solid var(--border);
@@ -287,6 +276,8 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 .ir:last-child { border:none; }
 .iv { color:var(--accent-l); font-family:'Space Mono',monospace; font-size:10.5px; }
 .ivg { color:var(--green); }
+
+#fetchStatus { font-size:11px; color:var(--muted); margin-top:6px; min-height:14px; font-family:'Space Mono',monospace; }
 </style>
 </head>
 <body>
@@ -358,7 +349,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   </div>
 </div>
 
-<!-- Settings -->
 <div id="ov" onclick="if(event.target===this)closeS()">
   <div id="panel">
     <div class="ph">
@@ -381,23 +371,25 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
         Disguise this tab's title and favicon. The <b style="color:var(--text)">about:blank</b> option opens a clean popup window with zyn inside.
       </p>
       <div class="chips" id="cchips">
-        <div class="chip" onclick="cloak('google',this)">🌐 Google</div>
-        <div class="chip" onclick="cloak('drive',this)">📁 Drive</div>
-        <div class="chip" onclick="cloak('canvas',this)">📚 Canvas</div>
-        <div class="chip" onclick="cloak('outlook',this)">📧 Outlook</div>
-        <div class="chip" onclick="cloak('docs',this)">📄 Docs</div>
-        <div class="chip" onclick="cloak('classroom',this)">🏫 Classroom</div>
+        <div class="chip" onclick="cloak('google',this)"><img src="https://www.google.com/favicon.ico">Google</div>
+        <div class="chip" onclick="cloak('classroom',this)"><img src="https://ssl.gstatic.com/classroom/favicon.png">Classroom</div>
+        <div class="chip" onclick="cloak('clever',this)"><img src="https://clever.com/favicon.ico">Clever</div>
+        <div class="chip" onclick="cloak('drive',this)"><img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png">Drive</div>
+        <div class="chip" onclick="cloak('canvas',this)"><img src="https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico">Canvas</div>
+        <div class="chip" onclick="cloak('outlook',this)"><img src="https://outlook.live.com/favicon.ico">Outlook</div>
+        <div class="chip" onclick="cloak('docs',this)"><img src="https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico">Docs</div>
         <div class="chip" onclick="cloak('blob',this)">⬜ about:blank</div>
         <div class="chip" onclick="cloak('none',this)">✕ Remove</div>
       </div>
       <div style="margin-top:14px">
-        <div class="slbl">Custom cloak</div>
-        <input class="sinp" id="ctitle" placeholder="Tab title  (e.g. Google)">
-        <input class="sinp" id="cfavicon" placeholder="Favicon URL  (optional)">
+        <div class="slbl">Custom cloak — fetch from URL</div>
+        <input class="sinp" id="curl" placeholder="https://example.com  (fetches title + favicon)">
+        <input class="sinp" id="ctitle" placeholder="Or override title manually (optional)">
         <div class="srow">
-          <button class="sbtn sp1" onclick="customCloak()">Apply</button>
+          <button class="sbtn sp1" onclick="fetchCloak()">Fetch & Apply</button>
           <button class="sbtn sg1" onclick="cloak('none',null)">Remove</button>
         </div>
+        <div id="fetchStatus"></div>
       </div>
     </div>
 
@@ -413,8 +405,8 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Proxy backend</div>
       <select class="sinp" id="psel" onchange="pchanged()">
-        <option value="0">corsproxy.io</option>
-        <option value="1">allorigins.win</option>
+        <option value="0">allorigins.win  (recommended)</option>
+        <option value="1">corsproxy.org</option>
         <option value="2">thingproxy</option>
         <option value="custom">Custom</option>
       </select>
@@ -424,10 +416,10 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 </div>
 
 <script>
-// ── Proxies ─────────────────────────────────────────
+// ── Proxies (updated to working ones) ───────────────
 const PX = [
-  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://corsproxy.org/?' + encodeURIComponent(u),
   u => 'https://thingproxy.freeboard.io/fetch/' + u,
 ];
 let pxIdx = 0;
@@ -539,7 +531,11 @@ function load(url) {
   document.getElementById('loading').classList.add('on');
 
   startLoad();
+  // Route through proxy
   document.getElementById('frame').src = px(url);
+
+  // Show a friendly title immediately (proxy titles may not come through)
+  try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
 }
 
 function home() {
@@ -557,9 +553,11 @@ function home() {
 function loaded() {
   document.getElementById('loading').classList.remove('on');
   finProg(); stopLoad();
-  try { setTitle(document.getElementById('frame').contentDocument.title); } catch(e) {
-    try { setTitle(new URL(lastUrl).hostname); } catch(e2) {}
-  }
+  // Try to read title from inside frame (will fail cross-origin, that's fine)
+  try {
+    const t = document.getElementById('frame').contentDocument.title;
+    if (t && t.trim()) setTitle(t);
+  } catch(e) {}
 }
 
 function errored() {
@@ -618,14 +616,15 @@ function newCircuit(btn) {
   setTimeout(()=>btn.textContent='New Circuit',1100);
 }
 
-// Cloak presets
+// ── Cloak presets ────────────────────────────────────
 const CK = {
   google:    {title:'Google',                 fav:'https://www.google.com/favicon.ico'},
+  classroom: {title:'Google Classroom',       fav:'https://ssl.gstatic.com/classroom/favicon.png'},
+  clever:    {title:'Clever | Portal',        fav:'https://clever.com/favicon.ico'},
   drive:     {title:'My Drive – Google Drive',fav:'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'},
   canvas:    {title:'Dashboard – Canvas',     fav:'https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico'},
   outlook:   {title:'Inbox – Outlook',        fav:'https://outlook.live.com/favicon.ico'},
   docs:      {title:'Document – Google Docs', fav:'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'},
-  classroom: {title:'Google Classroom',       fav:'https://ssl.gstatic.com/classroom/favicon.png'},
 };
 
 function cloak(key, el) {
@@ -635,6 +634,7 @@ function cloak(key, el) {
   if (key==='blob')  { blobCloak(); return; }
   const c=CK[key]; if(!c) return;
   applyCloak(c.title, c.fav);
+  showFetchStatus('✓ cloak applied: ' + c.title);
 }
 
 function applyCloak(title, fav) {
@@ -642,6 +642,8 @@ function applyCloak(title, fav) {
   let l=document.querySelector("link[rel~='icon']");
   if (!l) { l=document.createElement('link'); l.rel='icon'; document.head.appendChild(l); }
   l.href = fav || 'data:,';
+  // Also update the browser tab's visible title
+  setTitle(title);
 }
 
 function rmCloak() {
@@ -649,23 +651,79 @@ function rmCloak() {
   let l=document.querySelector("link[rel~='icon']");
   if (l) l.href='data:,';
   document.querySelectorAll('#cchips .chip').forEach(c=>c.classList.remove('on'));
+  showFetchStatus('cloak removed');
 }
 
-function customCloak() {
-  const t=document.getElementById('ctitle').value.trim()||'Page';
-  const f=document.getElementById('cfavicon').value.trim();
-  applyCloak(t,f);
+// ── Custom cloak: fetch title + favicon from URL ─────
+async function fetchCloak() {
+  const urlRaw = document.getElementById('curl').value.trim();
+  const override = document.getElementById('ctitle').value.trim();
+  if (!urlRaw) { showFetchStatus('enter a url'); return; }
+
+  let url = urlRaw;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  showFetchStatus('fetching…');
+
+  let title = override || '';
+  let fav = '';
+
+  // Guess favicon location
+  try {
+    const u = new URL(url);
+    fav = u.origin + '/favicon.ico';
+  } catch(e) { showFetchStatus('invalid url'); return; }
+
+  // Try to fetch the page title via proxy
+  if (!title) {
+    try {
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      const r = await fetch(proxyUrl);
+      const j = await r.json();
+      const html = j.contents || '';
+      const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (m && m[1]) title = m[1].trim();
+
+      // Try to find a favicon link in the HTML
+      const fm = html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i);
+      if (fm && fm[1]) {
+        try {
+          fav = new URL(fm[1], url).href;
+        } catch(e) {}
+      }
+    } catch(e) {
+      // fall through with guesses
+    }
+  }
+
+  if (!title) {
+    try { title = new URL(url).hostname.replace(/^www\./,''); } catch(e){ title = 'Page'; }
+  }
+
+  applyCloak(title, fav);
   document.querySelectorAll('#cchips .chip').forEach(c=>c.classList.remove('on'));
+  showFetchStatus('✓ ' + title + '  →  ' + fav.split('/').pop());
 }
 
+function showFetchStatus(msg) {
+  const el = document.getElementById('fetchStatus');
+  el.textContent = msg;
+  clearTimeout(showFetchStatus._t);
+  showFetchStatus._t = setTimeout(()=>{ el.textContent=''; }, 4000);
+}
+
+// ── about:blank cloak ────────────────────────────────
 function blobCloak() {
-  const w=window.open('about:blank','_blank');
-  if (!w) { alert('Allow popups for the about:blank cloak.'); return; }
-  w.document.write(`<!DOCTYPE html><html><head><title></title><style>*{margin:0;padding:0}html,body{height:100%;overflow:hidden;background:#000}</style></head><body><iframe src="${location.href}" style="width:100%;height:100vh;border:none" allowfullscreen></iframe></body></html>`);
+  const w = window.open('about:blank', '_blank');
+  if (!w) { showFetchStatus('⚠ allow popups for about:blank cloak'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title></title>
+    <style>*{margin:0;padding:0}html,body{height:100%;overflow:hidden;background:#000}</style>
+    </head><body><iframe src="${location.href}" style="width:100%;height:100vh;border:none" allowfullscreen></iframe></body></html>`);
   w.document.close();
+  showFetchStatus('✓ opened about:blank window');
 }
 
-// Background
+// ── Background ───────────────────────────────────────
 function applyBg() {
   const u=document.getElementById('bginp').value.trim();
   if (!u) return;
@@ -682,7 +740,6 @@ function clearBg() {
 
 // ── Init ─────────────────────────────────────────────
 renderTabs();
-// random exit node
 const _e=EN[Math.random()*EN.length|0], _n=(Math.random()*253+1)|0;
 document.getElementById('exitip').textContent=_e+'.'+_n;
 document.getElementById('sexit').textContent=_e+'.'+_n;
