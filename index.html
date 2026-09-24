@@ -429,7 +429,7 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
   <div id="content">
     <div id="home">
       <div class="hw">zyn</div>
-      <p class="hsub">Proxy-browsing via Rammerhead. Encrypted. Zero logs.</p>
+      <p class="hsub">Proxy-browsing. Encrypted. Zero logs.</p>
       <div class="hrow">
         <input class="hinp" id="hinp" placeholder="Search or enter URL…" autocomplete="off"
           onkeydown="if(event.key==='Enter')hgo()">
@@ -483,23 +483,21 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Proxy backend</div>
       <div class="notice">
-        <b>Rammerhead</b> loads full sites in-frame. If it's slow/down, switch backends below.
+        <b>AllOrigins</b> is the default. If a site doesn't load, zyn auto-swaps to CorsProxy.
       </div>
       <select class="sinp" id="psel" onchange="pchanged()">
-        <option value="0">Rammerhead (direct2)</option>
-        <option value="1">Rammerhead (session)</option>
-        <option value="2">corsproxy.io (with key)</option>
-        <option value="3">allorigins.win</option>
-        <option value="4">corsproxy.org</option>
-        <option value="custom">Custom Rammerhead</option>
+        <option value="0">AllOrigins ★</option>
+        <option value="1">CorsProxy (with key)</option>
+        <option value="2">CorsProxy.org</option>
+        <option value="custom">Custom</option>
       </select>
-      <input class="sinp" id="cpinp" placeholder="https://your-rammerhead.up.railway.app" style="display:none;margin-top:7px">
+      <input class="sinp" id="cpinp" placeholder="https://your-proxy.com/?url=" style="display:none;margin-top:7px">
     </div>
 
     <div class="sec">
       <div class="slbl">Circuit</div>
       <div class="ir"><span>Status</span><span class="iv ivg">● Connected</span></div>
-      <div class="ir"><span>Backend</span><span class="iv" id="sbackend">Rammerhead direct2</span></div>
+      <div class="ir"><span>Backend</span><span class="iv" id="sbackend">AllOrigins</span></div>
       <div class="ir"><span>Exit IP</span><span class="iv" id="sexit">185.220.101.47</span></div>
       <div class="srow"><button class="sbtn sp1" onclick="newCircuit(this)">Rotate IP</button></div>
     </div>
@@ -559,20 +557,13 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 
 <script>
 // ═══════════════════════════════════════════════════
-// PROXY BACKENDS
+// PROXY BACKENDS (only the ones that actually worked)
 // ═══════════════════════════════════════════════════
 const CORSPROXY_KEY = 'fc973bc7';
 
 const PX = [
-  // 0: Rammerhead direct2 (path-based routing)
-  u => 'https://direct2.rammerhead.org/' + u,
-  // 1: Rammerhead session-based (fallback format)
-  u => 'https://direct2.rammerhead.org/session/' + encodeURIComponent(u),
-  // 2: CorsProxy with header stripping
-  u => 'https://corsproxy.io/?key=' + CORSPROXY_KEY + '&resHeaders=x-frame-options:&resHeaders=content-security-policy:&url=' + encodeURIComponent(u),
-  // 3: AllOrigins
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-  // 4: CorsProxy.org
+  u => 'https://corsproxy.io/?key=' + CORSPROXY_KEY + '&resHeaders=x-frame-options:&resHeaders=content-security-policy:&url=' + encodeURIComponent(u),
   u => 'https://corsproxy.org/?' + encodeURIComponent(u),
 ];
 
@@ -582,10 +573,8 @@ let loadTimer = null;
 function px(u) {
   const v = document.getElementById('psel').value;
   if (v === 'custom') {
-    const c = document.getElementById('cpinp').value.trim().replace(/\/$/, '');
-    if (!c) return PX[0](u);
-    // custom Rammerhead: append /<url>
-    return c + '/' + u;
+    const c = document.getElementById('cpinp').value.trim();
+    return c ? c + encodeURIComponent(u) : PX[0](u);
   }
   return PX[parseInt(v)](u);
 }
@@ -593,7 +582,7 @@ function px(u) {
 function pchanged() {
   const val = document.getElementById('psel').value;
   document.getElementById('cpinp').style.display = val === 'custom' ? 'block' : 'none';
-  const names = ['Rammerhead direct2', 'Rammerhead session', 'CorsProxy', 'AllOrigins', 'CorsProxy.org', 'Custom'];
+  const names = ['AllOrigins', 'CorsProxy', 'CorsProxy.org', 'Custom'];
   document.getElementById('sbackend').textContent = val === 'custom' ? 'Custom' : names[parseInt(val)];
 }
 
@@ -606,26 +595,24 @@ function nextProxy() {
 }
 
 // ═══════════════════════════════════════════════════
-// BOOKMARKS (fetched icons via Google favicon service)
+// BOOKMARKS
 // ═══════════════════════════════════════════════════
 const BOOKMARKS = [
-  { name: 'Discord',    url: 'https://discord.com/app' },
-  { name: 'YouTube',    url: 'https://youtube.com' },
-  { name: 'MathPlay',   url: 'https://mathplayground.com' },
-  { name: 'Now.gg',     url: 'https://now.gg' },
-  { name: 'Twitch',     url: 'https://twitch.tv' },
-  { name: 'Netflix',    url: 'https://netflix.com' },
-  { name: 'Spotify',    url: 'https://open.spotify.com' },
-  { name: 'Roblox',     url: 'https://roblox.com' },
+  { name: 'Discord',  url: 'https://discord.com/app' },
+  { name: 'YouTube',  url: 'https://youtube.com' },
+  { name: 'MathPlay', url: 'https://mathplayground.com' },
+  { name: 'Now.gg',   url: 'https://now.gg' },
+  { name: 'Twitch',   url: 'https://twitch.tv' },
+  { name: 'Netflix',  url: 'https://netflix.com' },
+  { name: 'Spotify',  url: 'https://open.spotify.com' },
+  { name: 'Roblox',   url: 'https://roblox.com' },
 ];
 
 function faviconFor(url, size) {
   try {
     const domain = new URL(url).hostname;
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size || 64}`;
-  } catch (e) {
-    return '';
-  }
+  } catch (e) { return ''; }
 }
 
 function renderBookmarks() {
@@ -651,7 +638,7 @@ function renderBookmarks() {
 }
 
 // ═══════════════════════════════════════════════════
-// GAMES HUB (auto-fetched icons)
+// GAMES HUB
 // ═══════════════════════════════════════════════════
 const GAMES = [
   { name: 'NettleWeb',    url: 'https://nettleweb.com',           emoji: '🎮' },
@@ -671,21 +658,17 @@ function renderGames() {
     const el = document.createElement('div');
     el.className = 'gbtn';
     el.title = g.url;
-
     const img = document.createElement('img');
     img.src = faviconFor(g.url, 64);
     img.alt = g.name;
     img.onerror = () => {
-      // fallback to emoji if favicon fails
-      img.replaceWith(Object.assign(document.createElement('span'), {
-        className: 'ico',
-        textContent: g.emoji
-      }));
+      const span = document.createElement('span');
+      span.className = 'ico';
+      span.textContent = g.emoji;
+      img.replaceWith(span);
     };
-
     const span = document.createElement('span');
     span.textContent = g.name;
-
     el.appendChild(img);
     el.appendChild(span);
     el.onclick = () => nav(g.url);
@@ -785,10 +768,8 @@ function load(url) {
   startLoad();
   clearTimeout(loadTimer);
 
-  const proxied = px(url);
-  document.getElementById('frame').src = proxied;
+  document.getElementById('frame').src = px(url);
 
-  // Auto-fallback if slow
   loadTimer = setTimeout(() => {
     if (document.getElementById('loading').classList.contains('on')) {
       const cur = parseInt(document.getElementById('psel').value) || 0;
@@ -843,7 +824,7 @@ function fwd()   { try { document.getElementById('frame').contentWindow.history.
 function rl()    { if (lastUrl) load(lastUrl); }
 
 // ═══════════════════════════════════════════════════
-// PROGRESS BAR
+// PROGRESS
 // ═══════════════════════════════════════════════════
 let pt;
 function startProg() {
@@ -885,7 +866,7 @@ function newCircuit(btn) {
 }
 
 // ═══════════════════════════════════════════════════
-// CLOAKS (about:blank popup method)
+// CLOAKS
 // ═══════════════════════════════════════════════════
 const CK = {
   google:    {title:'Google',                  fav:'https://www.google.com/favicon.ico'},
