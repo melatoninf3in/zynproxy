@@ -278,6 +278,18 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 .ivg { color:var(--green); }
 
 #fetchStatus { font-size:11px; color:var(--muted); margin-top:6px; min-height:14px; font-family:'Space Mono',monospace; }
+
+.notice {
+  font-size:11px;
+  color:var(--muted);
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:7px;
+  padding:8px 10px;
+  line-height:1.5;
+  margin-bottom:10px;
+}
+.notice b { color: var(--accent-l); }
 </style>
 </head>
 <body>
@@ -367,9 +379,9 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 
     <div class="sec">
       <div class="slbl">Tab Cloak</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">
-        Disguise this tab's title and favicon. The <b style="color:var(--text)">about:blank</b> option opens a clean popup window with zyn inside.
-      </p>
+      <div class="notice">
+        Every cloak opens a <b>new about:blank window</b> containing zyn, then applies the disguise. This is the only way cloaks actually stick in modern browsers.
+      </div>
       <div class="chips" id="cchips">
         <div class="chip" onclick="cloak('google',this)"><img src="https://www.google.com/favicon.ico">Google</div>
         <div class="chip" onclick="cloak('classroom',this)"><img src="https://ssl.gstatic.com/classroom/favicon.png">Classroom</div>
@@ -378,8 +390,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
         <div class="chip" onclick="cloak('canvas',this)"><img src="https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico">Canvas</div>
         <div class="chip" onclick="cloak('outlook',this)"><img src="https://outlook.live.com/favicon.ico">Outlook</div>
         <div class="chip" onclick="cloak('docs',this)"><img src="https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico">Docs</div>
-        <div class="chip" onclick="cloak('blob',this)">⬜ about:blank</div>
-        <div class="chip" onclick="cloak('none',this)">✕ Remove</div>
       </div>
       <div style="margin-top:14px">
         <div class="slbl">Custom cloak — fetch from URL</div>
@@ -387,7 +397,6 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
         <input class="sinp" id="ctitle" placeholder="Or override title manually (optional)">
         <div class="srow">
           <button class="sbtn sp1" onclick="fetchCloak()">Fetch & Apply</button>
-          <button class="sbtn sg1" onclick="cloak('none',null)">Remove</button>
         </div>
         <div id="fetchStatus"></div>
       </div>
@@ -405,9 +414,9 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
     <div class="sec">
       <div class="slbl">Proxy backend</div>
       <select class="sinp" id="psel" onchange="pchanged()">
-        <option value="0">allorigins.win  (recommended)</option>
-        <option value="1">corsproxy.org</option>
-        <option value="2">thingproxy</option>
+        <option value="0">corsproxy.io</option>
+        <option value="1">allorigins.win</option>
+        <option value="2">corsproxy.org</option>
         <option value="custom">Custom</option>
       </select>
       <input class="sinp" id="cpinp" placeholder="https://your-proxy.com/?url=" style="display:none;margin-top:7px">
@@ -416,14 +425,15 @@ html,body { height:100%; background:#000; color:#e0e0e8; font-family:'Inter',san
 </div>
 
 <script>
-// ── Proxies (updated to working ones) ───────────────
+// ── Proxies ─────────────────────────────────────────
 const PX = [
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://corsproxy.org/?' + encodeURIComponent(u),
-  u => 'https://thingproxy.freeboard.io/fetch/' + u,
 ];
 let pxIdx = 0;
 let lastUrl = '';
+let loadTimer = null;
 
 function px(u) {
   const v = document.getElementById('psel').value;
@@ -440,7 +450,8 @@ function pchanged() {
 }
 
 function nextProxy() {
-  pxIdx = (pxIdx + 1) % 3;
+  const cur = parseInt(document.getElementById('psel').value) || 0;
+  pxIdx = (cur + 1) % 3;
   document.getElementById('psel').value = String(pxIdx);
   if (lastUrl) load(lastUrl);
 }
@@ -531,10 +542,35 @@ function load(url) {
   document.getElementById('loading').classList.add('on');
 
   startLoad();
-  // Route through proxy
-  document.getElementById('frame').src = px(url);
+  clearTimeout(loadTimer);
 
-  // Show a friendly title immediately (proxy titles may not come through)
+  // Route through proxy
+  const proxied = px(url);
+  document.getElementById('frame').src = proxied;
+
+  // Timeout: if frame hasn't loaded in 12s, fallback to next proxy
+  loadTimer = setTimeout(() => {
+    if (document.getElementById('loading').classList.contains('on')) {
+      // Try next proxy
+      const cur = parseInt(document.getElementById('psel').value) || 0;
+      const next = (cur + 1) % 3;
+      if (next !== cur) {
+        document.getElementById('psel').value = String(next);
+        document.getElementById('ltxt').textContent = 'Retrying via backup…';
+        document.getElementById('frame').src = px(url);
+        // Second timeout for final error
+        clearTimeout(loadTimer);
+        loadTimer = setTimeout(() => {
+          if (document.getElementById('loading').classList.contains('on')) {
+            errored();
+          }
+        }, 12000);
+      } else {
+        errored();
+      }
+    }
+  }, 12000);
+
   try { setTitle(new URL(url).hostname.replace(/^www\./,'')); } catch(e){}
 }
 
@@ -546,14 +582,15 @@ function home() {
   document.getElementById('err').style.display = 'none';
   document.getElementById('urlbar').value = '';
   tabs[active].url = '';
+  clearTimeout(loadTimer);
   stopLoad(); finProg();
   setTimeout(() => document.getElementById('hinp').focus(), 80);
 }
 
 function loaded() {
+  clearTimeout(loadTimer);
   document.getElementById('loading').classList.remove('on');
   finProg(); stopLoad();
-  // Try to read title from inside frame (will fail cross-origin, that's fine)
   try {
     const t = document.getElementById('frame').contentDocument.title;
     if (t && t.trim()) setTitle(t);
@@ -561,6 +598,7 @@ function loaded() {
 }
 
 function errored() {
+  clearTimeout(loadTimer);
   document.getElementById('loading').classList.remove('on');
   stopLoad(); finProg();
   document.getElementById('err').style.display = 'flex';
@@ -600,7 +638,6 @@ function stopLoad() { clearInterval(lt); }
 function openS()  { document.getElementById('ov').classList.add('on'); }
 function closeS() { document.getElementById('ov').classList.remove('on'); }
 
-// Tor circuit
 const GN = ['188.241.58.12','23.129.64.217','45.141.215.99','185.107.47.215','176.10.104.240'];
 const MN = ['relay.anon.net','freedom.exit.relay','onion.relay.de','anon.relay.net','guard.tor.exit'];
 const EN = ['185.220.101','199.249.230','192.42.116','176.126.252','185.100.87'];
@@ -618,40 +655,78 @@ function newCircuit(btn) {
 
 // ── Cloak presets ────────────────────────────────────
 const CK = {
-  google:    {title:'Google',                 fav:'https://www.google.com/favicon.ico'},
-  classroom: {title:'Google Classroom',       fav:'https://ssl.gstatic.com/classroom/favicon.png'},
-  clever:    {title:'Clever | Portal',        fav:'https://clever.com/favicon.ico'},
-  drive:     {title:'My Drive – Google Drive',fav:'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'},
-  canvas:    {title:'Dashboard – Canvas',     fav:'https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico'},
-  outlook:   {title:'Inbox – Outlook',        fav:'https://outlook.live.com/favicon.ico'},
-  docs:      {title:'Document – Google Docs', fav:'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'},
+  google:    {title:'Google',                  fav:'https://www.google.com/favicon.ico'},
+  classroom: {title:'Google Classroom',        fav:'https://ssl.gstatic.com/classroom/favicon.png'},
+  clever:    {title:'Clever | Portal',         fav:'https://clever.com/favicon.ico'},
+  drive:     {title:'My Drive – Google Drive', fav:'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'},
+  canvas:    {title:'Dashboard – Canvas',      fav:'https://du11hjcvx0uqb.cloudfront.net/dist/favicon-e88e7f19b55d720c7f64.ico'},
+  outlook:   {title:'Inbox – Outlook',         fav:'https://outlook.live.com/favicon.ico'},
+  docs:      {title:'Document – Google Docs',  fav:'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'},
 };
+
+// ── Universal cloak via about:blank popup ────────────
+// Every cloak (preset or custom) opens a new about:blank window
+// containing zyn via iframe, then applies title + favicon there.
+// This is the only way cloaks reliably persist.
+function openCloakedWindow(title, fav) {
+  const w = window.open('about:blank', '_blank');
+  if (!w) {
+    showFetchStatus('⚠ popup blocked — allow popups');
+    return false;
+  }
+
+  // Build the popup content
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtml(title)}</title>
+${fav ? `<link rel="icon" href="${escapeHtml(fav)}">` : ''}
+<style>
+  * { margin:0; padding:0; }
+  html, body { height:100%; overflow:hidden; background:#000; }
+  iframe { width:100%; height:100vh; border:none; }
+</style>
+</head>
+<body>
+<iframe src="${escapeHtml(location.href)}" allowfullscreen></iframe>
+<script>
+  // Prevent zyn's own title from overriding ours
+  try {
+    document.title = ${JSON.stringify(title)};
+  } catch(e) {}
+<\/script>
+</body>
+</html>`;
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+
+  // Also re-apply the title after the iframe starts loading
+  // (some browsers reset title)
+  try {
+    setTimeout(() => {
+      try { w.document.title = title; } catch(e) {}
+    }, 200);
+  } catch(e) {}
+
+  return true;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
 
 function cloak(key, el) {
   document.querySelectorAll('#cchips .chip').forEach(c=>c.classList.remove('on'));
   if (el) el.classList.add('on');
-  if (key==='none')  { rmCloak(); return; }
-  if (key==='blob')  { blobCloak(); return; }
-  const c=CK[key]; if(!c) return;
-  applyCloak(c.title, c.fav);
-  showFetchStatus('✓ cloak applied: ' + c.title);
-}
-
-function applyCloak(title, fav) {
-  document.title = title;
-  let l=document.querySelector("link[rel~='icon']");
-  if (!l) { l=document.createElement('link'); l.rel='icon'; document.head.appendChild(l); }
-  l.href = fav || 'data:,';
-  // Also update the browser tab's visible title
-  setTitle(title);
-}
-
-function rmCloak() {
-  document.title='zyn';
-  let l=document.querySelector("link[rel~='icon']");
-  if (l) l.href='data:,';
-  document.querySelectorAll('#cchips .chip').forEach(c=>c.classList.remove('on'));
-  showFetchStatus('cloak removed');
+  const c = CK[key];
+  if (!c) return;
+  openCloakedWindow(c.title, c.fav);
+  showFetchStatus('✓ opened cloaked window: ' + c.title);
 }
 
 // ── Custom cloak: fetch title + favicon from URL ─────
@@ -668,13 +743,11 @@ async function fetchCloak() {
   let title = override || '';
   let fav = '';
 
-  // Guess favicon location
   try {
     const u = new URL(url);
     fav = u.origin + '/favicon.ico';
   } catch(e) { showFetchStatus('invalid url'); return; }
 
-  // Try to fetch the page title via proxy
   if (!title) {
     try {
       const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
@@ -684,25 +757,20 @@ async function fetchCloak() {
       const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
       if (m && m[1]) title = m[1].trim();
 
-      // Try to find a favicon link in the HTML
       const fm = html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i);
       if (fm && fm[1]) {
-        try {
-          fav = new URL(fm[1], url).href;
-        } catch(e) {}
+        try { fav = new URL(fm[1], url).href; } catch(e) {}
       }
-    } catch(e) {
-      // fall through with guesses
-    }
+    } catch(e) {}
   }
 
   if (!title) {
     try { title = new URL(url).hostname.replace(/^www\./,''); } catch(e){ title = 'Page'; }
   }
 
-  applyCloak(title, fav);
+  openCloakedWindow(title, fav);
   document.querySelectorAll('#cchips .chip').forEach(c=>c.classList.remove('on'));
-  showFetchStatus('✓ ' + title + '  →  ' + fav.split('/').pop());
+  showFetchStatus('✓ ' + title);
 }
 
 function showFetchStatus(msg) {
@@ -710,17 +778,6 @@ function showFetchStatus(msg) {
   el.textContent = msg;
   clearTimeout(showFetchStatus._t);
   showFetchStatus._t = setTimeout(()=>{ el.textContent=''; }, 4000);
-}
-
-// ── about:blank cloak ────────────────────────────────
-function blobCloak() {
-  const w = window.open('about:blank', '_blank');
-  if (!w) { showFetchStatus('⚠ allow popups for about:blank cloak'); return; }
-  w.document.write(`<!DOCTYPE html><html><head><title></title>
-    <style>*{margin:0;padding:0}html,body{height:100%;overflow:hidden;background:#000}</style>
-    </head><body><iframe src="${location.href}" style="width:100%;height:100vh;border:none" allowfullscreen></iframe></body></html>`);
-  w.document.close();
-  showFetchStatus('✓ opened about:blank window');
 }
 
 // ── Background ───────────────────────────────────────
